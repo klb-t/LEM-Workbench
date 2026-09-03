@@ -18,7 +18,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         val database = AppDatabase.getDatabase(this)
-        val repository = ResearchRepository(database.experimentDao(), database.ledgerDao())
+        val repository = ResearchRepository(database.experimentDao(), database.ledgerDao(), database.configDao())
         val viewModelFactory = ResearchViewModelFactory(repository)
         val viewModel: ResearchViewModel by viewModels { viewModelFactory }
 

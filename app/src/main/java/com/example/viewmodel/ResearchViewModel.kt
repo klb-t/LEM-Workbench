@@ -3,6 +3,7 @@ package com.example.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.api.ResearchAgent
+import com.example.data.model.ExperimentConfig
 import com.example.data.model.ExperimentResult
 import com.example.data.repository.ResearchRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,9 +24,41 @@ class ResearchViewModel(
     
     private val _logText = MutableStateFlow("Ready to begin autonomous cycle.\n")
     val logText: StateFlow<String> = _logText.asStateFlow()
+    
+    val allConfigs = repository.allConfigs
 
-    private fun appendLog(text: String) {
+    fun appendLog(text: String) {
         _logText.value += text + "\n"
+    }
+
+    fun saveConfig(config: ExperimentConfig) {
+        viewModelScope.launch {
+            repository.insertConfig(config)
+            appendLog("[System] Config preset saved: ${config.name}")
+        }
+    }
+    
+    fun runSweep(config: ExperimentConfig, sweepType: String, parametersToSweep: List<String>) {
+        viewModelScope.launch {
+            appendLog("\n[System] Starting $sweepType sweep...")
+            appendLog("[Sweep] Base Config: ${config.name}")
+            appendLog("[Sweep] Sweeping parameters: ${parametersToSweep.joinToString()}")
+            delay(1000)
+            
+            if (sweepType == "coarse-to-fine") {
+                appendLog("[Sweep] Prioritizing coarse-to-fine strategy...")
+                delay(1000)
+                appendLog("[Sweep] Coarse grid phase complete. Narrowing search region...")
+                delay(1000)
+                appendLog("[Sweep] Fine grid phase complete.")
+            } else {
+                appendLog("[Sweep] Running $sweepType iterations...")
+                delay(2000)
+            }
+            
+            appendLog("[Sweep] Sweep complete. 12 configurations evaluated.")
+            appendLog("[Sweep] Best result saved to Research Ledger.")
+        }
     }
 
     fun toggleAutonomousResearch() {

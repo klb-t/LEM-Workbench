@@ -120,7 +120,7 @@ fun LemLabApp(viewModel: ResearchViewModel) {
                 composable(Screen.CliffordInteractions.route) { PlaceholderScreen(Screen.CliffordInteractions.title) }
                 composable(Screen.AutonomousResearch.route) { AutonomousResearchScreen(viewModel) }
                 composable(Screen.Artifacts.route) { PlaceholderScreen(Screen.Artifacts.title) }
-                composable(Screen.Settings.route) { SettingsScreen() }
+                composable(Screen.Settings.route) { SettingsScreen(viewModel) }
             }
         }
     }
