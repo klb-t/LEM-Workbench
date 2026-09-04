@@ -107,7 +107,7 @@ fun LemLabApp(viewModel: ResearchViewModel) {
                 startDestination = Screen.Dashboard.route,
                 modifier = Modifier.padding(innerPadding).fillMaxSize()
             ) {
-                composable(Screen.Dashboard.route) { DashboardScreen() }
+                composable(Screen.Dashboard.route) { DashboardScreen(viewModel) }
                 composable(Screen.Experiments.route) { ExperimentsScreen(viewModel) }
                 composable(Screen.HypothesisGraph.route) { PlaceholderScreen(Screen.HypothesisGraph.title) }
                 composable(Screen.Models.route) { ModelsScreen(viewModel) }
