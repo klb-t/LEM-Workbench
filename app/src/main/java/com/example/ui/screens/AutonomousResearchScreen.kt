@@ -1,7 +1,6 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +18,7 @@ import com.example.viewmodel.ResearchViewModel
 @Composable
 fun AutonomousResearchScreen(viewModel: ResearchViewModel) {
     val isRunning by viewModel.isAutonomousRunning.collectAsState()
+    val smokeRunning by viewModel.isSmokeTestRunning.collectAsState()
     val log by viewModel.logText.collectAsState()
 
     Column(
@@ -32,26 +32,50 @@ fun AutonomousResearchScreen(viewModel: ResearchViewModel) {
             letterSpacing = 2.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+
+        Text(
+            "Current build: real Gemini instrument preflight + persistent ledger. " +
+                "Full autonomous training backend is deliberately not simulated.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Button(
                 onClick = { viewModel.toggleAutonomousResearch() },
+                enabled = !smokeRunning,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.height(56.dp)
+                modifier = Modifier.weight(1f).height(56.dp)
             ) {
                 Text(
-                    text = if (isRunning) "STOP AUTONOMOUS RESEARCH" else "RUN AUTONOMOUS RESEARCH",
+                    text = if (isRunning) "STOP PREFLIGHT" else "RUN AUTONOMOUS PREFLIGHT",
                     fontWeight = FontWeight.Black,
-                    fontSize = 12.sp,
-                    letterSpacing = 1.sp
+                    fontSize = 11.sp,
+                    letterSpacing = 0.8.sp
+                )
+            }
+
+            OutlinedButton(
+                onClick = { viewModel.runEncoderSmokeTest() },
+                enabled = !isRunning && !smokeRunning,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.weight(1f).height(56.dp)
+            ) {
+                Text(
+                    if (smokeRunning) "TESTING..." else "TEST GEMINI ENCODER",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp
                 )
             }
         }
-        
+
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(
                 checked = true,
@@ -69,7 +93,7 @@ fun AutonomousResearchScreen(viewModel: ResearchViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        
+
         Card(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -86,7 +110,7 @@ fun AutonomousResearchScreen(viewModel: ResearchViewModel) {
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
+
             LaunchedEffect(log) {
                 scrollState.animateScrollTo(scrollState.maxValue)
             }
