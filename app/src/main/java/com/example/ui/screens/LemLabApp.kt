@@ -30,15 +30,11 @@ fun LemLabApp(viewModel: ResearchViewModel) {
         drawerContent = {
             ModalDrawerSheet {
                 Spacer(Modifier.height(12.dp))
-                Text(
-                    "LEM Lab",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.titleLarge
-                )
+                Text("LEM Lab", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
                 HorizontalDivider()
                 Screen.values().forEach { screen ->
                     NavigationDrawerItem(
-                        label = { Text(text = screen.title) },
+                        label = { Text(screen.title) },
                         selected = currentRoute == screen.route,
                         onClick = {
                             navController.navigate(screen.route) {
@@ -60,13 +56,13 @@ fun LemLabApp(viewModel: ResearchViewModel) {
                     title = {
                         Column {
                             Text(
-                                text = "LEM LAB",
+                                "LEM LAB",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
-                                text = "EXPERIMENTAL WORKBENCH",
+                                "MEASURED WORKBENCH",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -75,24 +71,7 @@ fun LemLabApp(viewModel: ResearchViewModel) {
                     },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(imageVector = Icons.Default.Menu, contentDescription = "Menu", tint = MaterialTheme.colorScheme.primary)
-                        }
-                    },
-                    actions = {
-                        Row(
-                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                            modifier = Modifier.padding(end = 16.dp)
-                        ) {
-                            androidx.compose.foundation.Canvas(modifier = Modifier.size(8.dp)) {
-                                drawCircle(color = androidx.compose.ui.graphics.Color(0xFF4ADE80))
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "LOCAL DB",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                color = androidx.compose.ui.graphics.Color(0xFF4ADE80)
-                            )
+                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = MaterialTheme.colorScheme.primary)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -109,16 +88,7 @@ fun LemLabApp(viewModel: ResearchViewModel) {
             ) {
                 composable(Screen.Dashboard.route) { DashboardScreen(viewModel) }
                 composable(Screen.Experiments.route) { ExperimentsScreen(viewModel) }
-                composable(Screen.HypothesisGraph.route) { PlaceholderScreen(Screen.HypothesisGraph.title) }
                 composable(Screen.Models.route) { ModelsScreen(viewModel) }
-                composable(Screen.Corpora.route) { PlaceholderScreen(Screen.Corpora.title) }
-                composable(Screen.Anchors.route) { PlaceholderScreen(Screen.Anchors.title) }
-                composable(Screen.LatentExplorer.route) { PlaceholderScreen(Screen.LatentExplorer.title) }
-                composable(Screen.Topology.route) { PlaceholderScreen(Screen.Topology.title) }
-                composable(Screen.SourceProvenance.route) { PlaceholderScreen(Screen.SourceProvenance.title) }
-                composable(Screen.CliffordInteractions.route) { PlaceholderScreen(Screen.CliffordInteractions.title) }
-                composable(Screen.AutonomousResearch.route) { AutonomousResearchScreen(viewModel) }
-                composable(Screen.Artifacts.route) { PlaceholderScreen(Screen.Artifacts.title) }
                 composable(Screen.Settings.route) { SettingsScreen(viewModel) }
             }
         }

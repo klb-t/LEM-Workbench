@@ -19,17 +19,16 @@ import com.example.viewmodel.ResearchViewModel
 fun ModelsScreen(viewModel: ResearchViewModel) {
     val models by viewModel.models.collectAsState()
     val refreshing by viewModel.isModelRefreshRunning.collectAsState()
+    val activeInstrument by viewModel.activeInstrument.collectAsState()
+    val instrumentMessage by viewModel.instrumentMessage.collectAsState()
+    val apiKeyConfigured by viewModel.apiKeyConfigured.collectAsState()
 
-    LaunchedEffect(Unit) {
-        if (models.isEmpty()) viewModel.refreshModels()
+    LaunchedEffect(apiKeyConfigured) {
+        if (apiKeyConfigured && models.isEmpty()) viewModel.refreshModels()
     }
 
-    val embeddingModels = models.filter { model ->
-        model.supportedGenerationMethods.orEmpty().any { it.contains("embed", ignoreCase = true) }
-    }
-    val generationModels = models.filter { model ->
-        model.supportedGenerationMethods.orEmpty().any { it.contains("generate", ignoreCase = true) }
-    }
+    val embeddingModels = models.filter { it.supports("embed") }
+    val generationModels = models.filter { it.supports("generate") }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -37,7 +36,7 @@ fun ModelsScreen(viewModel: ResearchViewModel) {
     ) {
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         "LIVE MODEL REGISTRY",
                         style = MaterialTheme.typography.titleSmall,
@@ -46,45 +45,66 @@ fun ModelsScreen(viewModel: ResearchViewModel) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        "Loaded from the configured Gemini API key — no hard-coded model catalogue.",
+                        "Every model shown here comes from the configured Gemini API account.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                OutlinedButton(onClick = { viewModel.refreshModels() }, enabled = !refreshing) {
+                Spacer(Modifier.width(8.dp))
+                OutlinedButton(
+                    onClick = { viewModel.refreshModels() },
+                    enabled = apiKeyConfigured && !refreshing && activeInstrument == null
+                ) {
                     Text(if (refreshing) "REFRESHING" else "REFRESH")
                 }
             }
         }
 
-        if (!refreshing && models.isEmpty()) {
+        instrumentMessage?.let { message ->
             item {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        "No models discovered. Check GEMINI_API_KEY and network access.",
-                        modifier = Modifier.padding(16.dp),
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp
-                    )
-                }
+                Text(
+                    message,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
+        if (!apiKeyConfigured) {
+            item { StatusCard("Configure a Gemini API key in Settings before calling the live registry.") }
+        } else if (!refreshing && models.isEmpty()) {
+            item { StatusCard("The live registry returned no models. Check the key/network and refresh.") }
+        }
+
         if (embeddingModels.isNotEmpty()) {
-            item { SectionLabel("EMBEDDINGS") }
-            items(embeddingModels) { model -> ModelCard(model) }
+            item { SectionLabel("EMBEDDING ENDPOINTS") }
+            items(embeddingModels, key = { it.name.orEmpty() }) { model ->
+                ModelCard(
+                    model = model,
+                    activeInstrument = activeInstrument,
+                    onEmbeddingTest = { name -> viewModel.runEmbeddingInstrument(name) },
+                    onGenerationTest = null
+                )
+            }
         }
 
         if (generationModels.isNotEmpty()) {
-            item { SectionLabel("GENERATION / RESEARCH AGENTS") }
-            items(generationModels) { model -> ModelCard(model) }
+            item { SectionLabel("GENERATION ENDPOINTS") }
+            items(generationModels, key = { "generation:${it.name.orEmpty()}" }) { model ->
+                ModelCard(
+                    model = model,
+                    activeInstrument = activeInstrument,
+                    onEmbeddingTest = null,
+                    onGenerationTest = { name -> viewModel.runGenerationInstrument(name) }
+                )
+            }
         }
     }
 }
+
+private fun ApiModel.supports(fragment: String): Boolean =
+    supportedGenerationMethods.orEmpty().any { it.contains(fragment, ignoreCase = true) }
 
 @Composable
 private fun SectionLabel(text: String) {
@@ -99,21 +119,45 @@ private fun SectionLabel(text: String) {
 }
 
 @Composable
-private fun ModelCard(model: ApiModel) {
+private fun StatusCard(text: String) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Text(
+            text,
+            modifier = Modifier.padding(16.dp),
+            fontFamily = FontFamily.Monospace,
+            fontSize = 12.sp
+        )
+    }
+}
+
+@Composable
+private fun ModelCard(
+    model: ApiModel,
+    activeInstrument: String?,
+    onEmbeddingTest: ((String) -> Unit)?,
+    onGenerationTest: ((String) -> Unit)?
+) {
+    val modelName = model.name
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shape = RoundedCornerShape(16.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(model.displayName ?: model.name ?: "Unnamed model", fontWeight = FontWeight.Bold)
-            Text(
-                model.name ?: "unknown id",
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(model.displayName ?: modelName ?: "Unnamed model", fontWeight = FontWeight.Bold)
+            modelName?.let {
+                Text(
+                    it,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             if (!model.supportedGenerationMethods.isNullOrEmpty()) {
                 Text(
                     "Methods: ${model.supportedGenerationMethods.joinToString()}",
@@ -129,6 +173,25 @@ private fun ModelCard(model: ApiModel) {
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+
+            if (modelName != null && onEmbeddingTest != null) {
+                OutlinedButton(
+                    onClick = { onEmbeddingTest(modelName) },
+                    enabled = activeInstrument == null,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (activeInstrument == "embedding:$modelName") "CALLING API..." else "RUN REAL EMBEDDING CHECK")
+                }
+            }
+            if (modelName != null && onGenerationTest != null) {
+                OutlinedButton(
+                    onClick = { onGenerationTest(modelName) },
+                    enabled = activeInstrument == null,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (activeInstrument == "generation:$modelName") "CALLING API..." else "RUN REAL GENERATION CHECK")
+                }
             }
         }
     }

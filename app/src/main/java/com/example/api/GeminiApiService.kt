@@ -1,37 +1,30 @@
 package com.example.api
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
-import retrofit2.http.Query
 import retrofit2.http.Path
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import retrofit2.http.Query
 
-@Serializable
 data class GenerateContentRequest(
     val contents: List<Content>,
     val generationConfig: GenerationConfig? = null,
-    val tools: List<JsonObject>? = null,
     val systemInstruction: Content? = null
 )
 
-@Serializable
 data class Content(
     val parts: List<Part>
 )
 
-@Serializable
 data class Part(
     val text: String? = null
 )
 
-@Serializable
 data class GenerationConfig(
     val temperature: Float? = null,
     val topP: Float? = null,
@@ -39,17 +32,14 @@ data class GenerationConfig(
     val responseMimeType: String? = null
 )
 
-@Serializable
 data class GenerateContentResponse(
     val candidates: List<Candidate>?
 )
 
-@Serializable
 data class Candidate(
     val content: Content?
 )
 
-@Serializable
 data class EmbedContentRequest(
     val model: String? = null,
     val content: Content,
@@ -57,17 +47,14 @@ data class EmbedContentRequest(
     val outputDimensionality: Int? = null
 )
 
-@Serializable
 data class EmbedContentResponse(
     val embedding: Embedding
 )
 
-@Serializable
 data class Embedding(
     val values: List<Float>
 )
 
-@Serializable
 data class ApiModel(
     val name: String? = null,
     val displayName: String? = null,
@@ -77,7 +64,6 @@ data class ApiModel(
     val outputTokenLimit: Int? = null
 )
 
-@Serializable
 data class ListModelsResponse(
     val models: List<ApiModel>? = null,
     val nextPageToken: String? = null
@@ -118,11 +104,11 @@ object RetrofitClient {
         val moshi = Moshi.Builder()
             .add(KotlinJsonAdapterFactory())
             .build()
-        val retrofit = Retrofit.Builder()
+        Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
-        retrofit.create(GeminiApiService::class.java)
+            .create(GeminiApiService::class.java)
     }
 }
