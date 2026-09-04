@@ -36,44 +36,49 @@ fun ExperimentsScreen(viewModel: ResearchViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        
+
         if (experiments.isEmpty()) {
             item {
                 Text(
-                    "No experiments recorded yet.",
+                    "No measured API checks have been persisted yet.",
                     fontFamily = FontFamily.Monospace,
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-        
-        items(experiments) { exp ->
+
+        items(experiments, key = { it.experimentId }) { exp ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = exp.hypothesis, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Serif, style = MaterialTheme.typography.titleSmall)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "ID: ${exp.experimentId.take(8)}...", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    val date = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(exp.timestamp))
-                    Text(text = "Date: $date", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(text = "Architecture: ${exp.architecture}", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(text = "Status: ${exp.status}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "Critique: ${exp.adversarialCritique.take(100)}...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = { /* Implement Falsification Routine */ },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)
-                    ) {
-                        Text("TRY TO BREAK THIS RESULT", fontWeight = FontWeight.Bold, fontSize = 10.sp, letterSpacing = 1.sp)
-                    }
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        exp.hypothesis,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Serif,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(exp.timestamp))
+                    Text("ID: ${exp.experimentId}", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Date: $date", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Architecture: ${exp.architecture}", fontFamily = FontFamily.Monospace, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Status: ${exp.status}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
+                    Text("Tested consequence: ${exp.testedConsequence}", style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        "Raw metrics: ${exp.rawMetrics}",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "Critique: ${exp.adversarialCritique}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
