@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import com.example.api.ApiKeyStore
 import com.example.data.local.AppDatabase
 import com.example.data.repository.ResearchRepository
 import com.example.ui.screens.LemLabApp
@@ -16,7 +17,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
+
+        ApiKeyStore.init(this)
         val database = AppDatabase.getDatabase(this)
         val repository = ResearchRepository(database.experimentDao(), database.ledgerDao(), database.configDao())
         val viewModelFactory = ResearchViewModelFactory(repository)
