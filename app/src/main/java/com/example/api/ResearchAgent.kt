@@ -1,20 +1,21 @@
 package com.example.api
 
-import com.example.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class ResearchAgent {
 
-    private val apiKey = BuildConfig.GEMINI_API_KEY
     private val apiService = RetrofitClient.service
+
+    private fun apiKey(): String = ApiKeyStore.getGeminiApiKey()
 
     suspend fun generateText(
         prompt: String,
         modelName: String = "gemini-3.5-flash",
         systemPrompt: String? = null
     ): String? = withContext(Dispatchers.IO) {
-        if (apiKey.isEmpty()) return@withContext "API Key missing"
+        val key = apiKey()
+        if (key.isEmpty()) return@withContext "API Key missing"
 
         val systemInstruction = systemPrompt?.let {
             Content(parts = listOf(Part(text = it)))
@@ -25,7 +26,7 @@ class ResearchAgent {
             systemInstruction = systemInstruction
         )
         try {
-            val response = apiService.generateContent(modelName, apiKey, request)
+            val response = apiService.generateContent(modelName, key, request)
             response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
         } catch (e: Exception) {
             "Error: ${e.message}"
@@ -37,7 +38,8 @@ class ResearchAgent {
         modelName: String = "gemini-embedding-2-preview",
         dimensions: Int? = null
     ): List<Float>? = withContext(Dispatchers.IO) {
-        if (apiKey.isEmpty()) return@withContext null
+        val key = apiKey()
+        if (key.isEmpty()) return@withContext null
 
         val request = EmbedContentRequest(
             model = "models/$modelName",
@@ -45,17 +47,18 @@ class ResearchAgent {
             outputDimensionality = dimensions
         )
         try {
-            val response = apiService.embedContent(modelName, apiKey, request)
+            val response = apiService.embedContent(modelName, key, request)
             response.embedding.values
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
 
     suspend fun listModels(): List<ApiModel> = withContext(Dispatchers.IO) {
-        if (apiKey.isEmpty()) return@withContext emptyList()
+        val key = apiKey()
+        if (key.isEmpty()) return@withContext emptyList()
         try {
-            apiService.listModels(apiKey).models.orEmpty()
+            apiService.listModels(key).models.orEmpty()
         } catch (_: Exception) {
             emptyList()
         }
