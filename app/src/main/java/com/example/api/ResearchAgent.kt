@@ -7,60 +7,53 @@ class ResearchAgent {
 
     private val apiService = RetrofitClient.service
 
-    private fun apiKey(): String = ApiKeyStore.getGeminiApiKey()
+    private fun requireApiKey(): String = ApiKeyStore.getGeminiApiKey().ifBlank {
+        throw IllegalStateException("Gemini API key is not configured")
+    }
+
+    private fun modelId(modelName: String): String = modelName.removePrefix("models/")
 
     suspend fun generateText(
         prompt: String,
-        modelName: String = "gemini-3.5-flash",
+        modelName: String,
         systemPrompt: String? = null
-    ): String? = withContext(Dispatchers.IO) {
-        val key = apiKey()
-        if (key.isEmpty()) return@withContext "API Key missing"
-
-        val systemInstruction = systemPrompt?.let {
-            Content(parts = listOf(Part(text = it)))
-        }
-
+    ): String = withContext(Dispatchers.IO) {
+        val key = requireApiKey()
+        val id = modelId(modelName)
         val request = GenerateContentRequest(
             contents = listOf(Content(parts = listOf(Part(text = prompt)))),
-            systemInstruction = systemInstruction
+            generationConfig = GenerationConfig(temperature = 0f),
+            systemInstruction = systemPrompt?.let { Content(parts = listOf(Part(text = it))) }
         )
-        try {
-            val response = apiService.generateContent(modelName, key, request)
-            response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
-        } catch (e: Exception) {
-            "Error: ${e.message}"
-        }
+        val response = apiService.generateContent(id, key, request)
+        response.candidates
+            ?.firstOrNull()
+            ?.content
+            ?.parts
+            ?.mapNotNull { it.text }
+            ?.joinToString("")
+            ?.takeIf { it.isNotBlank() }
+            ?: throw IllegalStateException("Gemini generation returned no text")
     }
 
     suspend fun getEmbedding(
         text: String,
-        modelName: String = "gemini-embedding-2-preview",
+        modelName: String,
         dimensions: Int? = null
-    ): List<Float>? = withContext(Dispatchers.IO) {
-        val key = apiKey()
-        if (key.isEmpty()) return@withContext null
-
+    ): List<Float> = withContext(Dispatchers.IO) {
+        val key = requireApiKey()
+        val id = modelId(modelName)
         val request = EmbedContentRequest(
-            model = "models/$modelName",
+            model = "models/$id",
             content = Content(parts = listOf(Part(text = text))),
             outputDimensionality = dimensions
         )
-        try {
-            val response = apiService.embedContent(modelName, key, request)
-            response.embedding.values
-        } catch (_: Exception) {
-            null
-        }
+        apiService.embedContent(id, key, request).embedding.values
+            .takeIf { it.isNotEmpty() }
+            ?: throw IllegalStateException("Gemini embedding returned an empty vector")
     }
 
     suspend fun listModels(): List<ApiModel> = withContext(Dispatchers.IO) {
-        val key = apiKey()
-        if (key.isEmpty()) return@withContext emptyList()
-        try {
-            apiService.listModels(key).models.orEmpty()
-        } catch (_: Exception) {
-            emptyList()
-        }
+        apiService.listModels(requireApiKey()).models.orEmpty()
     }
 }
