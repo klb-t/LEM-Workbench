@@ -39,7 +39,8 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          printf 'GEMINI_API_KEY=%s\n' "${GEMINI_API_KEY:-}" > .env
+          KEY="${GEMINI_API_KEY:-CI_PLACEHOLDER_KEY}"
+          printf 'GEMINI_API_KEY=%s\n' "$KEY" > .env
 
       - name: Unit tests
         run: gradle --stacktrace testDebugUnitTest
