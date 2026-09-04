@@ -2,6 +2,7 @@ package com.example.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.api.ApiKeyStore
 import com.example.api.ApiModel
 import com.example.api.ResearchAgent
 import com.example.data.model.ExperimentConfig
@@ -32,13 +33,29 @@ class ResearchViewModel(
     private val _isModelRefreshRunning = MutableStateFlow(false)
     val isModelRefreshRunning: StateFlow<Boolean> = _isModelRefreshRunning.asStateFlow()
 
-    private val _logText = MutableStateFlow("Ready. Run an encoder smoke test before expensive research.\n")
+    private val _apiKeyConfigured = MutableStateFlow(ApiKeyStore.isConfigured())
+    val apiKeyConfigured: StateFlow<Boolean> = _apiKeyConfigured.asStateFlow()
+
+    private val _logText = MutableStateFlow("Ready. Configure a Gemini API key, then run an encoder smoke test.\n")
     val logText: StateFlow<String> = _logText.asStateFlow()
 
     val allConfigs = repository.allConfigs
 
     fun appendLog(text: String) {
         _logText.value += text + "\n"
+    }
+
+    fun saveApiKey(value: String) {
+        ApiKeyStore.setGeminiApiKey(value)
+        _apiKeyConfigured.value = ApiKeyStore.isConfigured()
+        appendLog(if (_apiKeyConfigured.value) "[System] Runtime Gemini API key saved locally." else "[System] Gemini API key is empty.")
+    }
+
+    fun clearApiKey() {
+        ApiKeyStore.clearGeminiApiKey()
+        _apiKeyConfigured.value = ApiKeyStore.isConfigured()
+        appendLog("[System] Runtime Gemini API key cleared.")
+        _models.value = emptyList()
     }
 
     fun saveConfig(config: ExperimentConfig) {
@@ -102,11 +119,6 @@ class ResearchViewModel(
         }
     }
 
-    /**
-     * Honest preflight for the future autonomous engine.
-     * It plans a next experiment, runs a real encoder instrument check, persists it, and then stops.
-     * The actual architecture/training runner must be implemented before continuous autonomy is enabled.
-     */
     private suspend fun runAutonomousPreflight() {
         appendLog("[Agent] Reading available configuration and proposing the next informative experiment...")
         val plan = agent.generateText(
