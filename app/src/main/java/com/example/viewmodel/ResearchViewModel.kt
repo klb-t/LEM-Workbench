@@ -2,6 +2,7 @@ package com.example.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.api.ApiModel
 import com.example.api.ResearchAgent
 import com.example.data.model.ExperimentConfig
 import com.example.data.repository.ResearchRepository
@@ -25,6 +26,12 @@ class ResearchViewModel(
     private val _isSmokeTestRunning = MutableStateFlow(false)
     val isSmokeTestRunning: StateFlow<Boolean> = _isSmokeTestRunning.asStateFlow()
 
+    private val _models = MutableStateFlow<List<ApiModel>>(emptyList())
+    val models: StateFlow<List<ApiModel>> = _models.asStateFlow()
+
+    private val _isModelRefreshRunning = MutableStateFlow(false)
+    val isModelRefreshRunning: StateFlow<Boolean> = _isModelRefreshRunning.asStateFlow()
+
     private val _logText = MutableStateFlow("Ready. Run an encoder smoke test before expensive research.\n")
     val logText: StateFlow<String> = _logText.asStateFlow()
 
@@ -38,6 +45,20 @@ class ResearchViewModel(
         viewModelScope.launch {
             repository.insertConfig(config)
             appendLog("[System] Config preset saved: ${config.name}")
+        }
+    }
+
+    fun refreshModels() {
+        if (_isModelRefreshRunning.value) return
+        viewModelScope.launch {
+            _isModelRefreshRunning.value = true
+            try {
+                val live = agent.listModels()
+                _models.value = live.sortedBy { it.name.orEmpty() }
+                appendLog("[Models] Discovered ${live.size} models from the live API registry.")
+            } finally {
+                _isModelRefreshRunning.value = false
+            }
         }
     }
 
