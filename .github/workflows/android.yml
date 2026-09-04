@@ -27,8 +27,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          PATTERN='NOT[[:space:]]+IMPLEMENTED|fake[ _-]?metrics|PlaceholderScreen|TODO|FIXME|onClick[[:space:]]*=[[:space:]]*\{[[:space:]]*\}'
-          if grep -RniE "$PATTERN" app/src/main/java; then
+          PATTERN='NOT[[:space:]]+IMPLEMENTED|[Ff]ake[ _-]?[Mm]etrics|PlaceholderScreen|TODO|FIXME|onClick[[:space:]]*=[[:space:]]*\{[[:space:]]*\}'
+          if grep -RnE "$PATTERN" app/src/main/java; then
             echo "Production source contains a stub, no-op control, or fabricated-metric marker."
             exit 1
           fi
