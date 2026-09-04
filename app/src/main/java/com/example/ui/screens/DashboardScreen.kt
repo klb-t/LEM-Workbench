@@ -16,6 +16,8 @@ import com.example.viewmodel.ResearchViewModel
 @Composable
 fun DashboardScreen(viewModel: ResearchViewModel) {
     val experiments by viewModel.repository.allExperiments.collectAsState(initial = emptyList())
+    val apiKeyConfigured by viewModel.apiKeyConfigured.collectAsState()
+    val models by viewModel.models.collectAsState()
     val latest = experiments.firstOrNull()
 
     LazyColumn(
@@ -47,16 +49,16 @@ fun DashboardScreen(viewModel: ResearchViewModel) {
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.5.sp
                     )
-                    Text("Experiments persisted: ${experiments.size}", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                    Text("Persisted records: ${experiments.size}", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                     if (latest == null) {
                         Text(
-                            "No measured result yet. Run the Gemini encoder smoke test first.",
+                            "No API instrument result has been measured yet.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
                         Text("Latest: ${latest.experimentId.take(8)}", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                         Text("Status: ${latest.status}", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
-                        Text(latest.testedConsequence, style = MaterialTheme.typography.bodySmall)
+                        Text(latest.rawMetrics, fontFamily = FontFamily.Monospace, fontSize = 10.sp)
                     }
                 }
             }
@@ -82,11 +84,11 @@ fun DashboardScreen(viewModel: ResearchViewModel) {
                         style = MaterialTheme.typography.bodySmall
                     )
                     Text(
-                        "Global value axes are not assumed; global landmarks + context-local transport remains an open supported architecture branch.",
+                        "Global value axes are not assumed; global landmarks + context-local transport remains an open architecture branch.",
                         style = MaterialTheme.typography.bodySmall
                     )
                     Text(
-                        "These are project checkpoints, not measurements produced by this APK.",
+                        "Historical checkpoints are explicitly separated from measurements produced by this installation.",
                         fontFamily = FontFamily.Monospace,
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -102,19 +104,18 @@ fun DashboardScreen(viewModel: ResearchViewModel) {
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        "SYSTEM STATUS",
+                        "LIVE SYSTEM STATE",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.5.sp,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    Text("Room ledger: ENABLED", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
-                    Text("Fake metrics: DISABLED", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
-                    Text("Full autonomous trainer: NOT IMPLEMENTED", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
-                    Text("GitHub APK CI: CONFIGURED", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                    Text("Room ledger: active", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                    Text("Gemini key: ${if (apiKeyConfigured) "configured" else "not configured"}", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                    Text("Live models loaded: ${models.size}", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                 }
             }
         }
