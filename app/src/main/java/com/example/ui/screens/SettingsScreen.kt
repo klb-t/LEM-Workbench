@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.viewmodel.ResearchViewModel
@@ -22,7 +23,9 @@ import java.util.UUID
 @Composable
 fun SettingsScreen(viewModel: ResearchViewModel) {
     val allConfigs by viewModel.allConfigs.collectAsState(initial = emptyList())
-    
+    val apiKeyConfigured by viewModel.apiKeyConfigured.collectAsState()
+
+    var apiKey by remember { mutableStateOf("") }
     var configName by remember { mutableStateOf("New Config") }
     var embeddingModel by remember { mutableStateOf("gemini-embedding-2-preview") }
     var latentDim by remember { mutableStateOf("128") }
@@ -42,9 +45,7 @@ fun SettingsScreen(viewModel: ResearchViewModel) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
@@ -54,7 +55,7 @@ fun SettingsScreen(viewModel: ResearchViewModel) {
             letterSpacing = 2.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        
+
         TabRow(selectedTabIndex = selectedTab, containerColor = MaterialTheme.colorScheme.background) {
             Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) { Text("EDITOR", modifier = Modifier.padding(16.dp)) }
             Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) { Text("PRESETS", modifier = Modifier.padding(16.dp)) }
@@ -66,15 +67,53 @@ fun SettingsScreen(viewModel: ResearchViewModel) {
                 modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                Card(modifier = Modifier.fillMaxWidth(), colors = cardColors, border = cardBorder, shape = cardShape) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("GEMINI API", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            if (apiKeyConfigured) "Runtime key configured" else "Runtime key required for Gemini calls",
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                            color = if (apiKeyConfigured) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        )
+                        OutlinedTextField(
+                            value = apiKey,
+                            onValueChange = { apiKey = it },
+                            label = { Text("Gemini API key") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp)
+                        )
+                        Text("Stored only in this app's private local preferences. It is not written to experiment exports.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = {
+                                    viewModel.saveApiKey(apiKey)
+                                    apiKey = ""
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) { Text("SAVE KEY") }
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.clearApiKey()
+                                    apiKey = ""
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) { Text("CLEAR") }
+                        }
+                    }
+                }
+
                 OutlinedTextField(value = configName, onValueChange = { configName = it }, label = { Text("Config Name") }, modifier = Modifier.fillMaxWidth(), textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp))
-                
+
                 Card(modifier = Modifier.fillMaxWidth(), colors = cardColors, border = cardBorder, shape = cardShape) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("MODELS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.primary)
                         OutlinedTextField(value = embeddingModel, onValueChange = { embeddingModel = it }, label = { Text("Embedding Model") }, modifier = Modifier.fillMaxWidth(), textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp))
                     }
                 }
-                
+
                 Card(modifier = Modifier.fillMaxWidth(), colors = cardColors, border = cardBorder, shape = cardShape) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("DIMENSIONS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.primary)
@@ -97,7 +136,7 @@ fun SettingsScreen(viewModel: ResearchViewModel) {
                         OutlinedTextField(value = seed, onValueChange = { seed = it }, label = { Text("Seed") }, modifier = Modifier.fillMaxWidth(), textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp))
                     }
                 }
-                
+
                 Card(modifier = Modifier.fillMaxWidth(), colors = cardColors, border = cardBorder, shape = cardShape) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("CLIFFORD / INTERACTION OPTIONS", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.primary)
@@ -105,32 +144,30 @@ fun SettingsScreen(viewModel: ResearchViewModel) {
                         OutlinedTextField(value = maxGrade, onValueChange = { maxGrade = it }, label = { Text("Max Grade") }, modifier = Modifier.fillMaxWidth(), textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp))
                     }
                 }
-                
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { 
-                            val config = ExperimentConfig(
-                                id = UUID.randomUUID().toString(),
-                                name = configName,
-                                embeddingModel = embeddingModel,
-                                latentDim = latentDim.toIntOrNull() ?: 128,
-                                freeDim = freeDim.toIntOrNull() ?: 64,
-                                namedDim = namedDim.toIntOrNull() ?: 64,
-                                learningRate = learningRate.toFloatOrNull() ?: 0.001f,
-                                epochs = epochs.toIntOrNull() ?: 50,
-                                anchorLambda = anchorLambda.toFloatOrNull() ?: 1.0f,
-                                interactionReadout = interactionReadout,
-                                maxGrade = maxGrade.toIntOrNull() ?: 2,
-                                seed = seed.toIntOrNull() ?: 42
-                            )
-                            viewModel.saveConfig(config)
-                        },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)
-                    ) {
-                        Text("SAVE PRESET", fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
-                    }
+
+                Button(
+                    onClick = {
+                        val config = ExperimentConfig(
+                            id = UUID.randomUUID().toString(),
+                            name = configName,
+                            embeddingModel = embeddingModel,
+                            latentDim = latentDim.toIntOrNull() ?: 128,
+                            freeDim = freeDim.toIntOrNull() ?: 64,
+                            namedDim = namedDim.toIntOrNull() ?: 64,
+                            learningRate = learningRate.toFloatOrNull() ?: 0.001f,
+                            epochs = epochs.toIntOrNull() ?: 50,
+                            anchorLambda = anchorLambda.toFloatOrNull() ?: 1.0f,
+                            interactionReadout = interactionReadout,
+                            maxGrade = maxGrade.toIntOrNull() ?: 2,
+                            seed = seed.toIntOrNull() ?: 42
+                        )
+                        viewModel.saveConfig(config)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)
+                ) {
+                    Text("SAVE PRESET", fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
                 }
             }
         } else if (selectedTab == 1) {
@@ -143,10 +180,10 @@ fun SettingsScreen(viewModel: ResearchViewModel) {
                             Spacer(Modifier.height(8.dp))
                             Text("Model: ${config.embeddingModel}", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                             Text("Latent: ${config.latentDim} | LR: ${config.learningRate} | Epochs: ${config.epochs}", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
-                            
+
                             Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(
-                                    onClick = { 
+                                    onClick = {
                                         configName = "${config.name} (Copy)"
                                         embeddingModel = config.embeddingModel
                                         latentDim = config.latentDim.toString()
@@ -158,19 +195,15 @@ fun SettingsScreen(viewModel: ResearchViewModel) {
                                         interactionReadout = config.interactionReadout
                                         maxGrade = config.maxGrade.toString()
                                         seed = config.seed.toString()
-                                        selectedTab = 0 
+                                        selectedTab = 0
                                     },
                                     modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("DUPLICATE")
-                                }
+                                ) { Text("DUPLICATE") }
                                 Button(
-                                    onClick = { /* Compare logic */ },
+                                    onClick = { },
                                     modifier = Modifier.weight(1f),
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface)
-                                ) {
-                                    Text("COMPARE")
-                                }
+                                ) { Text("COMPARE") }
                             }
                         }
                     }
@@ -180,17 +213,17 @@ fun SettingsScreen(viewModel: ResearchViewModel) {
             Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 var sweepParam by remember { mutableStateOf("anchorLambda") }
                 var sweepType by remember { mutableStateOf("coarse-to-fine") }
-                
+
                 Card(modifier = Modifier.fillMaxWidth(), colors = cardColors, border = cardBorder, shape = cardShape) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("SWEEP CONFIGURATION", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, color = MaterialTheme.colorScheme.primary)
                         OutlinedTextField(value = sweepParam, onValueChange = { sweepParam = it }, label = { Text("Parameter to Sweep") }, modifier = Modifier.fillMaxWidth(), textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp))
                         OutlinedTextField(value = sweepType, onValueChange = { sweepType = it }, label = { Text("Strategy (grid, random, coarse-to-fine)") }, modifier = Modifier.fillMaxWidth(), textStyle = androidx.compose.ui.text.TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp))
-                        
+
                         Button(
-                            onClick = { 
+                            onClick = {
                                 val baseConfig = allConfigs.firstOrNull() ?: ExperimentConfig(id = "default", name = "Default Base")
-                                viewModel.runSweep(baseConfig, sweepType, listOf(sweepParam)) 
+                                viewModel.runSweep(baseConfig, sweepType, listOf(sweepParam))
                             },
                             modifier = Modifier.fillMaxWidth().height(48.dp).padding(top = 8.dp),
                             shape = RoundedCornerShape(16.dp)

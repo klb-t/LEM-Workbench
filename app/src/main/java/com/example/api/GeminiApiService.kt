@@ -2,15 +2,13 @@ package com.example.api
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.ResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Query
-import retrofit2.http.Streaming
 import retrofit2.http.Path
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -69,7 +67,29 @@ data class Embedding(
     val values: List<Float>
 )
 
+@Serializable
+data class ApiModel(
+    val name: String? = null,
+    val displayName: String? = null,
+    val description: String? = null,
+    val supportedGenerationMethods: List<String>? = null,
+    val inputTokenLimit: Int? = null,
+    val outputTokenLimit: Int? = null
+)
+
+@Serializable
+data class ListModelsResponse(
+    val models: List<ApiModel>? = null,
+    val nextPageToken: String? = null
+)
+
 interface GeminiApiService {
+    @GET("v1beta/models")
+    suspend fun listModels(
+        @Query("key") apiKey: String,
+        @Query("pageSize") pageSize: Int = 1000
+    ): ListModelsResponse
+
     @POST("v1beta/models/{model}:generateContent")
     suspend fun generateContent(
         @Path("model") model: String,
