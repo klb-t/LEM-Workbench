@@ -7,7 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -22,7 +21,7 @@ fun LemLabApp(viewModel: ResearchViewModel) {
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: Screen.Dashboard.route
 
@@ -36,7 +35,7 @@ fun LemLabApp(viewModel: ResearchViewModel) {
                     modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.titleLarge
                 )
-                Divider()
+                HorizontalDivider()
                 Screen.values().forEach { screen ->
                     NavigationDrawerItem(
                         label = { Text(text = screen.title) },
@@ -61,13 +60,13 @@ fun LemLabApp(viewModel: ResearchViewModel) {
                     title = {
                         Column {
                             Text(
-                                text = "LEM LAB V4.2",
+                                text = "LEM LAB",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
-                                text = "EP-NODE: 0x82f..4a",
+                                text = "EXPERIMENTAL WORKBENCH",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -89,7 +88,7 @@ fun LemLabApp(viewModel: ResearchViewModel) {
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "PERSISTENT / SAVED",
+                                text = "LOCAL DB",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                                 color = androidx.compose.ui.graphics.Color(0xFF4ADE80)
@@ -111,7 +110,7 @@ fun LemLabApp(viewModel: ResearchViewModel) {
                 composable(Screen.Dashboard.route) { DashboardScreen() }
                 composable(Screen.Experiments.route) { ExperimentsScreen(viewModel) }
                 composable(Screen.HypothesisGraph.route) { PlaceholderScreen(Screen.HypothesisGraph.title) }
-                composable(Screen.Models.route) { ModelsScreen() }
+                composable(Screen.Models.route) { ModelsScreen(viewModel) }
                 composable(Screen.Corpora.route) { PlaceholderScreen(Screen.Corpora.title) }
                 composable(Screen.Anchors.route) { PlaceholderScreen(Screen.Anchors.title) }
                 composable(Screen.LatentExplorer.route) { PlaceholderScreen(Screen.LatentExplorer.title) }
