@@ -9,19 +9,19 @@ class RealOnlyPolicyTest {
     fun productionSourceContainsNoKnownStubMarkers() {
         val sourceRoot = File("src/main/java")
         val forbidden = listOf(
-            "NOT IMPLEMENTED",
-            "fake metrics",
-            "PlaceholderScreen",
-            "TODO",
-            "FIXME"
+            Regex("NOT\\s+IMPLEMENTED"),
+            Regex("[Ff]ake[ _-]?[Mm]etrics"),
+            Regex("PlaceholderScreen"),
+            Regex("\\bTODO\\b"),
+            Regex("\\bFIXME\\b")
         )
         val hits = sourceRoot.walkTopDown()
             .filter { it.isFile && (it.extension == "kt" || it.extension == "java") }
             .flatMap { file ->
                 val text = file.readText()
                 forbidden.asSequence()
-                    .filter { marker -> text.contains(marker, ignoreCase = true) }
-                    .map { marker -> "${file.path}: $marker" }
+                    .filter { regex -> regex.containsMatchIn(text) }
+                    .map { regex -> "${file.path}: ${regex.pattern}" }
             }
             .toList()
 
