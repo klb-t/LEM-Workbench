@@ -1,6 +1,0 @@
-{
-  "name": "LEM Lab",
-  "description": "Large Epistemic Model (LEM) autonomous research lab",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
